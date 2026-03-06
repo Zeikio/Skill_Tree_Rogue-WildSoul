@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compétences</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue:      #5b7fff;
+  --blue-glow: #5b7fff99;
+  --red:       #cc3355;
+  --red-glow:  #cc335599;
+  --gold:      #e8c040;
+  --gold-glow: #e8c04088;
+  --grey:      #3a3a5a;
+  --bg:        #0e0b1a;
+  --redder:    #ff0000;
+}
+
+html, body {
+  width:100%; height:100%;
+  overflow:hidden;
+  background: var(--bg);
+  font-family: 'Crimson Text', serif;
+}
+
+/* ═══ PARALLAX ═══ */
+#parallax-root {
+  position:fixed; inset:0;
+  pointer-events:none; z-index:0;
+}
+.layer {
+  position:absolute; inset:-4%;
+  width:107%; height:107%;
+  background-size:cover; background-position:center;
+  will-change:transform;
+  transition:transform .09s ease-out;
+}
+.layer-0 { background-image:url('background1.png'); }
+.layer-1 { background-image:url('background2.png'); }
+.layer-2 { background-image:url('background3.png'); }
+.layer-3 { background-image:url('background4.png'); }
+
+.particle {
+  position:absolute; border-radius:50%;
+  pointer-events:none; opacity:0;
+  animation:floatUp linear infinite;
+}
+@keyframes floatUp {
+  0%   { transform:translateY(0) scale(1); opacity:0; }
+  10%  { opacity:.6; }
+  90%  { opacity:.2; }
+  100% { transform:translateY(-90px) scale(.2); opacity:0; }
+}
+
+/* ═══ SCENE ═══ */
+#scene {
+  position:relative; z-index:1;
+  width:100%; height:100vh;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+}
+
+h1 {
+  font-family:'Cinzel',serif;
+  font-size:clamp(1.4rem,3.5vw,2.6rem);
+  font-weight:900; color:var(--gold);
+  letter-spacing:.14em;
+  text-shadow:0 0 18px rgba(232,192,64,.7),0 0 50px rgba(232,192,64,.25);
+  user-select:none; margin-bottom:.15em;
+}
+.deco {
+  display:block; font-size:.55em; letter-spacing:.45em;
+  color:rgba(232,192,64,.45); margin-bottom:.7em; text-align:center;
+}
+
+/* ═══ HUD ═══ */
+#hud {
+  display:flex; flex-direction: column; align-items:center; gap:4px;
+  margin-bottom:1em;
+  
+  
+  border-radius:30px; padding:5px 18px;
+  
+}
+#hud span {
+  font-family:'Cinzel',serif; font-size:1.3rem;
+  color:rgb(255, 255, 255); letter-spacing:.08em;
+}
+#pts-display {
+  font-size:1.75rem !important; font-weight:700 !important;
+  color:var(--redder) !important;
+  text-shadow:0 0 10px var(--gold-glow);
+  min-width:2.2ch; text-align:center;
+}
+.crystal {
+  width:16px; height:20px; display:inline-block;
+  background:linear-gradient(135deg,#a78bfa,#c4b5fd,#7c3aed);
+  clip-path:polygon(50% 0%,100% 35%,80% 100%,20% 100%,0% 35%);
+  filter:drop-shadow(0 0 5px rgba(167,139,250,.9));
+  animation:cpulse 2s ease-in-out infinite;
+}
+@keyframes cpulse {
+  0%,100%{ filter:drop-shadow(0 0 5px rgba(167,139,250,.9)); }
+  50%    { filter:drop-shadow(0 0 12px rgba(167,139,250,1)); }
+}
+
+/* ═══ TREE ═══ */
+#tree-wrap {
+  position:relative;
+  width:min(96vw,960px);
+  aspect-ratio:960/480;
+}
+#tree-svg {
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  overflow:visible; pointer-events:none;
+}
+
+.edge {
+  stroke:#3a3a55; stroke-width:3; stroke-linecap:round;
+  transition:stroke .4s, filter .4s;
+}
+.edge.blue { stroke:var(--blue); filter:drop-shadow(0 0 4px var(--blue-glow)); }
+.edge.red  { stroke:var(--red);  filter:drop-shadow(0 0 4px var(--red-glow)); }
+
+/* ═══ NODES ═══ */
+.node {
+  position:absolute;
+  transform:translate(-50%,-50%);
+  cursor:pointer; user-select:none;
+  transition:transform .15s, opacity .3s;
+}
+.node:hover  { transform:translate(-50%,-50%) scale(1.13); }
+.node:active { transform:translate(-50%,-50%) scale(.93); }
+.node.unavail { opacity:1; }
+
+.cost-lbl {
+  position:absolute; bottom:-17px; left:50%;
+  transform:translateX(-50%);
+  font-family:'Cinzel',serif; font-size:.57rem;
+  color:rgba(255,255,255,.42); white-space:nowrap;
+  pointer-events:none;
+}
+
+/* shared box style */
+.nbox {
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+  transition:border-color .4s, background .4s, box-shadow .4s;
+}
+.nbox img { width:100%; height:100%; object-fit:cover; display:block; }
+
+/* circle */
+.n-circle {
+  width:50px; height:50px; border-radius:50%;
+  
+  background:rgba(14,11,26,.85);
+  box-shadow:0 2px 10px rgba(0,0,0,.6);
+}
+.n-circle img { border-radius:50%; }
+.n-circle.left.on  { border-color:var(--blue); background:radial-gradient(circle,rgba(91,127,255,.35),rgba(14,11,26,.9));  box-shadow:0 0 16px var(--blue-glow); }
+.n-circle.right.on { border-color:var(--red);  background:radial-gradient(circle,rgba(204,51,85,.35),rgba(14,11,26,.9));   box-shadow:0 0 16px var(--red-glow); }
+
+/* square */
+.n-square {
+  width:56px; height:56px; border-radius:16px;
+
+  background:rgba(14,11,26,.9);
+  box-shadow:0 2px 12px rgba(0,0,0,.7);
+}
+.n-square img { border-radius:8px; }
+.n-square.left.on  { border-color:var(--blue); background:radial-gradient(circle,rgba(91,127,255,.25),rgba(14,11,26,.95)); box-shadow:0 0 20px var(--blue-glow); }
+.n-square.right.on { border-color:var(--red);  background:radial-gradient(circle,rgba(204,51,85,.25),rgba(14,11,26,.95));  box-shadow:0 0 20px var(--red-glow); }
+
+/* root */
+.n-root {
+  width:64px; height:68px; border-radius:14px;
+  border:0px solid var(--grey);
+  
+}
+.n-root img { border-radius:11px; }
+.n-root.on {
+  border-color:var(--gold);
+  
+
+}
+
+
+/* placeholder fills */
+.ph { width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.15); font-size:1.1rem; }
+
+/* ═══ TOOLTIP ═══ */
+#tooltip {
+  position:fixed; z-index:999;
+  pointer-events:none;
+  opacity:0; transition:opacity .18s;
+  width:235px;
+}
+#tooltip.show { opacity:1; }
+.tt-box {
+  background:linear-gradient(140deg,rgba(10,7,22,.97),rgba(18,12,34,.97));
+  border:1px solid rgba(232,192,64,.3);
+  border-radius:12px;
+  box-shadow:0 10px 36px rgba(0,0,0,.85),0 0 22px rgba(232,192,64,.06);
+  overflow:hidden;
+  backdrop-filter:blur(10px);
+}
+.tt-pic {
+  width:100%; height:92px;
+  object-fit:cover; display:block;
+}
+.tt-ph {
+  width:100%; height:92px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:2.2rem;
+}
+.tt-body { padding:10px 13px 12px; }
+.tt-name {
+  font-family:'Cinzel',serif; font-size:.78rem; font-weight:700;
+  color:var(--gold); letter-spacing:.07em; margin-bottom:4px;
+}
+.tt-cost-row {
+  display:flex; align-items:center; gap:5px;
+  font-size:.7rem; color:rgba(167,139,250,.9); margin-bottom:7px;
+}
+.tt-acq { color:#5b7fff; font-weight:600; }
+.tt-desc { font-size:.77rem; color:rgba(215,205,235,.82); line-height:1.5; }
+
+/* ═══ RESET ═══ */
+#reset-btn {
+  margin-top:1em;
+  font-family:'Cinzel',serif; font-size:.68rem; letter-spacing:.1em;
+  color:rgba(232,192,64,.45); background:none;
+  border:1px solid rgba(232,192,64,.18); border-radius:20px;
+  padding:5px 16px; cursor:pointer;
+  transition:color .2s, border-color .2s, box-shadow .2s;
+}
+#reset-btn:hover { color:var(--gold); border-color:rgba(232,192,64,.55); box-shadow:0 0 10px rgba(232,192,64,.2); }
+</style>
+</head>
+<body>
+
+<div id="parallax-root">
+  <div class="layer layer-0" data-d=".02"></div>
+  <div class="layer layer-1" data-d=".06"></div>
+  <div class="layer layer-2" data-d=".12"></div>
+  <div class="layer layer-3" data-d=".20"></div>
+</div>
+
+<div id="tooltip">
+  <div class="tt-box">
+    <div id="tt-pic-wrap"></div>
+    <div class="tt-body">
+      <div class="tt-name"     id="tt-name"></div>
+      <div class="tt-cost-row" id="tt-cost"></div>
+      <div class="tt-desc"     id="tt-desc"></div>
+    </div>
+  </div>
+</div>
+
+<div id="scene">
+  <h1>Compétences <span class="deco">— ✦ —</span></h1>
+
+  
+
+  <div id="tree-wrap">
+    <svg id="tree-svg" viewBox="0 0 960 480" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+  <div id="hud">
+    <span>Éclats à utiliser</span>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <span id="pts-display">69</span>
+      <div class="crystal"></div>
+    </div>
+  </div>
+  <button id="reset-btn">↺ Réinitialiser</button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ╔══════════════════════════════════════════════════════════╗
+   ║              CONFIGURATION DES COMPÉTENCES              ║
+   ╚══════════════════════════════════════════════════════════╝
+
+   Pour chaque compétence tu peux renseigner :
+   ┌─────────────┬──────────────────────────────────────────────────┐
+   │ imgOff      │ Chemin PNG affiché quand la compétence est GRISE  │
+   │             │ Exemple : 'icons/flamme_off.png'                  │
+   ├─────────────┼──────────────────────────────────────────────────┤
+   │ imgOn       │ Chemin PNG affiché quand la compétence est ACTIVE │
+   │             │ Exemple : 'icons/flamme_on.png'                   │
+   ├─────────────┼──────────────────────────────────────────────────┤
+   │ imgDesc     │ Image illustrant le tooltip (peut être différente)│
+   │             │ Exemple : 'icons/flamme_desc.png'                 │
+   └─────────────┴──────────────────────────────────────────────────┘
+   Si un chemin est laissé vide (""), un placeholder coloré s'affiche.
+   Les fichiers PNG doivent être dans le MÊME dossier que ce HTML
+   (ou dans un sous-dossier si tu indiques le chemin complet).
+   ═══════════════════════════════════════════════════════════════ */
+
+const TOTAL = 69;
+
+const SKILLS = [
+
+  /* ────── RACINE (nœud central jaune) ────── */
+  { id:'root', shape:'root', side:'root', x:480, y:360, cost:1,
+    name:'Transformation',
+    desc:'Débloque le pouvoir de transformation.',
+    requires:[],
+    imgOff  : 'icons/root_off.png',   /* ← ex: 'icons/root_off.png'  */
+    imgOn   : 'icons/root_on.png',   /* ← ex: 'icons/root_on.png'   */
+    imgDesc : 'icons/test.gif ',   /* ← ex: 'icons/root_desc.png' */
+  },
+
+  /* ────── BRANCHE GAUCHE (bleue) ────── */
+  { id:'L1',  shape:'circle', side:'left',  x:400, y:360, cost:1,
+    name:'Pas de loup',
+    desc:'Vos déplacements silencieux sont plus rapides et... silencieux !',
+    requires:['root'],
+    imgOff:'icons/L1_off.png', imgOn:'icons/L1_on.png', imgDesc:'',
+  },
+  { id:'L2T', shape:'circle', side:'left',  x:340, y:300, cost:2,
+    name:'Arme D\'assassins',
+    desc:'Vous débloquez les lames d\’assassins, plus redoutable que votre dague d\’entrainement.',
+    requires:['L1'],
+    imgOff:'icons/L2T_off.png', imgOn:'icons/L2T_on.png', imgDesc:'',
+  },
+  { id:'L2M', shape:'square', side:'left',  x:264, y:360, cost:3,
+    name:'Lame Fantôme',
+    desc:'Tes attaques laissent une traînée spectrale infligeant des dégâts sur 2 s. Dégâts +22 %.',
+    requires:['L2T','L2B'],
+    imgOff:'icons/L2M_off.png', imgOn:'icons/L2M_on.png', imgDesc:'',
+  },
+  { id:'L2B', shape:'circle', side:'left',  x:340, y:420, cost:2,
+    name:'Ancrage Terrestre',
+    desc:'Réduit les effets de recul et améliore la stabilité. Résistance +12 % aux déséquilibres.',
+    requires:['L1'],
+    imgOff:'icons/L2B_off.png', imgOn:'icons/L2B_on.png', imgDesc:'',
+  },
+  { id:'L3T', shape:'circle', side:'left',  x:200, y:300, cost:3,
+    name:'Vol Éphémère',
+    desc:'Saut plané ignorant les obstacles au sol pendant 3 secondes.',
+    requires:['L2T'],
+    imgOff:'icons/L3T_off.png', imgOn:'icons/L3T_on.png', imgDesc:'',
+  },
+  { id:'L3M', shape:'square', side:'left',  x:144, y:360, cost:4,
+    name:'Maîtrise Runique',
+    desc:'Débloque les runes avancées. Chaque rune gravée augmente les dégâts de sorts de 8 %.',
+    requires:['L3T','L3B'],
+    imgOff:'icons/L3M_off.png', imgOn:'icons/L3M_on.png', imgDesc:'',
+  },
+  { id:'L3B', shape:'circle', side:'left',  x:200, y:420, cost:3,
+    name:'Œil Omniscient',
+    desc:'Révèle tous les ennemis invisibles à 10 m. Ennemis révélés : +15 % dégâts reçus.',
+    requires:['L2B'],
+    imgOff:'icons/L3B_off.png', imgOn:'icons/L3B_on.png', imgDesc:'',
+  },
+  { id:'L4B', shape:'circle', side:'left',  x:60, y:420, cost:5,
+    name:'Œil Omniscient',
+    desc:'Révèle tous les ennemis invisibles à 10 m. Ennemis révélés : +15 % dégâts reçus.',
+    requires:['L3B'],
+    imgOff:'icons/L4B_off.png', imgOn:'icons/L4B_on.png', imgDesc:'',
+  },
+    { id:'L4T', shape:'circle', side:'left',  x:60, y:300, cost:5,
+    name:'Œil Omniscient',
+    desc:'Révèle tous les ennemis invisibles à 10 m. Ennemis révélés : +15 % dégâts reçus.',
+    requires:['L3T'],
+    imgOff:'icons/L4T_off.png', imgOn:'icons/L4T_on.png', imgDesc:'',
+  },
+    { id:'L4M', shape:'square', side:'left',  x:0, y:360, cost:6,
+    name:'Œil Omniscient',
+    desc:'Révèle tous les ennemis invisibles à 10 m. Ennemis révélés : +15 % dégâts reçus.',
+    requires:['L4B','L4T'],
+    imgOff:'icons/L4M_off.png', imgOn:'icons/L4M_on.png', imgDesc:'',
+  },
+  /* ────── BRANCHE DROITE (rouge) ────── */
+  { id:'R1',  shape:'circle', side:'right', x:560, y:360, cost:1,
+    name:'Résonance Rouge I',
+    desc:'Augmente la synergie rouge. +5 % de dégâts de base.',
+    requires:['root'],
+    imgOff:'', imgOn:'', imgDesc:'',
+  },
+  { id:'R2T', shape:'circle', side:'right', x:620, y:300, cost:2,
+    name:'Furie Enflammée',
+    desc:'Chaque coup critique active une flamme intérieure : +12 % dégâts pendant 5 s.',
+    requires:['R1'],
+    imgOff:'', imgOn:'', imgDesc:'',
+  },
+  { id:'R2M', shape:'square', side:'right', x:696, y:360, cost:3,
+    name:'Bouclier Écarlate',
+    desc:'Génère un bouclier absorbant 200 dégâts. Rechargement : 25 s.',
+    requires:['R1'],
+    imgOff:'icons/R2M_off.png', imgOn:'icons/R2M_on.png', imgDesc:'',
+  },
+  { id:'R2B', shape:'circle', side:'right', x:620, y:420, cost:2,
+    name:'Peau de Pierre',
+    desc:'Réduit les dégâts physiques reçus de 10 %. Se cumule avec les autres défenses.',
+    requires:['R1'],
+    imgOff:'', imgOn:'', imgDesc:'',
+  },
+  { id:'R3T', shape:'circle', side:'right', x:760, y:300, cost:3,
+    name:'Nova Écarlate',
+    desc:'Libère une explosion de feu radiale infligeant 150 % des dégâts aux ennemis proches.',
+    requires:['R2T'],
+    imgOff:'', imgOn:'', imgDesc:'',
+  },
+  { id:'R3M', shape:'square', side:'right', x:836, y:360, cost:4,
+    name:'Éveil du Loup',
+    desc:'Transformation partielle 10 s : +40 % dégâts, +25 % vitesse, régénération 2 % PV/s.',
+    requires:['R2T','R2B'],
+    imgOff:'icons/R3M_off.png', imgOn:'icons/R3M_on.png', imgDesc:'',
+  },
+  { id:'R3B', shape:'circle', side:'right', x:760, y:420, cost:3,
+    name:'Mémoire Féline',
+    desc:'Stocke 5 charges d\'esquive. Chaque esquive réussie recharge 1 charge après 8 s.',
+    requires:['R2B'],
+    imgOff:'', imgOn:'', imgDesc:'',
+  },
+    { id:'R4B', shape:'circle', side:'right', x:900, y:420, cost:5,
+    name:'Mémoire Féline',
+    desc:'Stocke 5 charges d\'esquive. Chaque esquive réussie recharge 1 charge après 8 s.',
+    requires:['R2B'],
+    imgOff:'', imgOn:'', imgDesc:'',
+  },
+    { id:'R4M', shape:'square', side:'right', x:976, y:360, cost:6,
+    name:'Mémoire Féline',
+    desc:'Stocke 5 charges d\'esquive. Chaque esquive réussie recharge 1 charge après 8 s.',
+    requires:['R2B'],
+    imgOff:'icons/R4M_off.png', imgOn:'icons/R4M_on.png', imgDesc:'',
+  },
+    { id:'R4T', shape:'circle', side:'right', x:900, y:300, cost:5,
+    name:'Mémoire Féline',
+    desc:'Stocke 5 charges d\'esquive. Chaque esquive réussie recharge 1 charge après 8 s.',
+    requires:['R2B'],
+    imgOff:'', imgOn:'', imgDesc:'',
+  },
+];
+
+/* ═══ CONNEXIONS ═══ */
+const EDGES = [
+  ['root','L1'],['root','R1'],
+  ['L1','L2T'],['L1','L2B'],
+  ['L2T','L2M'],['L2M','L2B'],
+  ['L2T','L3T'],['L2B','L3B'],
+  ['L3T','L3M'],['L3M','L3B'],
+  ['R1','R2T'],['R1','R2B'],
+  ['R2T','R2M'],['R2B','R2M'],
+  ['R2T','R3T'],['R2B','R3B'],
+  ['R3T','R3M'],['R3M','R3B'],
+  ['L3B','L4B'],['L3T','L4T'],
+  ['L4B','L4M'],['L4T','L4M'],
+  ['R3B','R4B'],['R3T','R4T'],
+  ['R4B','R4M'],['R4T','R4M'],
+];
+
+/* ═══════════ MOTEUR (ne pas modifier) ═══════════ */
+const skillMap={};
+SKILLS.forEach(s=>skillMap[s.id]=s);
+let pts=TOTAL;
+const unlocked=new Set();
+
+/* parallax */
+const layers=document.querySelectorAll('.layer');
+let mx=0,my=0,cx=0,cy=0;
+document.addEventListener('mousemove',e=>{
+  mx=(e.clientX/innerWidth-.5)*2;
+  my=(e.clientY/innerHeight-.5)*2;
+});
+(function anim(){
+  cx+=(mx-cx)*.065; cy+=(my-cy)*.065;
+  layers.forEach(l=>{
+    const d=parseFloat(l.dataset.d)*85;
+    l.style.transform=`translate(${cx*d}px,${cy*d}px)`;
+  });
+  requestAnimationFrame(anim);
+})();
+
+/* particles */
+(()=>{
+  const root=document.getElementById('parallax-root');
+  const cols=['#e8c040','#a78bfa','#5b7fff','#cc3355','#7fffb0'];
+  for(let i=0;i<24;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    const s=Math.random()*2.5+.8;
+    p.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${35+Math.random()*58}%;background:${cols[Math.floor(Math.random()*cols.length)]};animation-duration:${4+Math.random()*7}s;animation-delay:${Math.random()*9}s;`;
+    root.appendChild(p);
+  }
+})();
+
+/* svg edges */
+const svg=document.getElementById('tree-svg');
+const edgeEls={};
+EDGES.forEach(([a,b])=>{
+  const sa=skillMap[a],sb=skillMap[b];
+  const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+  line.setAttribute('x1',sa.x);line.setAttribute('y1',sa.y);
+  line.setAttribute('x2',sb.x);line.setAttribute('y2',sb.y);
+  line.setAttribute('class','edge');
+  svg.appendChild(line);
+  edgeEls[`${a}-${b}`]=line;
+});
+
+/* build placeholder div */
+function ph(side){
+  const c=side==='left'?'rgba(91,127,255,.2)':side==='right'?'rgba(204,51,85,.2)':'rgba(232,192,64,.2)';
+  return `<div class="ph" style="background:${c}">✦</div>`;
+}
+
+/* build node DOM */
+const wrap=document.getElementById('tree-wrap');
+const nodeEls={};
+SKILLS.forEach(s=>{
+  const div=document.createElement('div');
+  div.className='node';
+  div.id='nd_'+s.id;
+  div.style.left=`${s.x/960*100}%`;
+  div.style.top =`${s.y/480*100}%`;
+  const cls='nbox n-'+(s.shape==='root'?'root':s.shape);
+  div.innerHTML=`
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+      <div class="${cls} ${s.side}" id="box_${s.id}">${ph(s.side)}</div>
+      <span class="cost-lbl">${s.cost} éclat${s.cost>1?'s':''}</span>
+    </div>`;
+  wrap.appendChild(div);
+  nodeEls[s.id]=div;
+});
+
+/* tooltip */
+const tooltip=document.getElementById('tooltip');
+const ttPicWrap=document.getElementById('tt-pic-wrap');
+const ttName=document.getElementById('tt-name');
+const ttCost=document.getElementById('tt-cost');
+const ttDesc=document.getElementById('tt-desc');
+let ttTimer,lastX=0,lastY=0;
+
+function showTT(s){
+  clearTimeout(ttTimer);
+  ttTimer=setTimeout(()=>{
+    if(s.imgDesc){
+      ttPicWrap.innerHTML=`<img src="${s.imgDesc}" class="tt-pic" alt="">`;
+    } else {
+      const bg=s.side==='left'?'#141a3a':s.side==='right'?'#2a0a1a':'#1a1408';
+      ttPicWrap.innerHTML=`<div class="tt-ph" style="background:${bg}">✦</div>`;
+    }
+    ttName.textContent=s.name;
+    const on=unlocked.has(s.id);
+    ttCost.innerHTML=`<div class="crystal" style="width:11px;height:14px"></div>Coût : ${s.cost} éclat${s.cost>1?'s':''} ${on?'<span class="tt-acq">✔ Acquis</span>':''}`;
+    ttDesc.textContent=s.desc;
+    tooltip.classList.add('show');
+    moveTT(lastX,lastY);
+  },160);
+}
+function hideTT(){ clearTimeout(ttTimer); tooltip.classList.remove('show'); }
+function moveTT(x,y){
+  let lx=x+20,ly=y-15;
+  if(lx+245>innerWidth)  lx=x-255;
+  if(ly+210>innerHeight) ly=y-220;
+  if(ly<4) ly=4;
+  tooltip.style.left=lx+'px'; tooltip.style.top=ly+'px';
+}
+document.addEventListener('mousemove',e=>{
+  lastX=e.clientX; lastY=e.clientY;
+  if(tooltip.classList.contains('show')) moveTT(e.clientX,e.clientY);
+});
+SKILLS.forEach(s=>{
+  nodeEls[s.id].addEventListener('mouseenter',()=>showTT(s));
+  nodeEls[s.id].addEventListener('mouseleave',hideTT);
+});
+
+/* unlock logic */
+function canUnlock(s){ return !unlocked.has(s.id)&&pts>=s.cost&&(s.requires.length===0||s.requires.some(r=>unlocked.has(r))); }
+function canLock(s){ return unlocked.has(s.id)&&!SKILLS.some(o=>o.requires.includes(s.id)&&unlocked.has(o.id)); }
+SKILLS.forEach(s=>{
+  nodeEls[s.id].addEventListener('click',()=>{
+    if(unlocked.has(s.id)){ if(canLock(s)){   unlocked.delete(s.id); pts+=s.cost; updateUI(); } }
+    else               { if(canUnlock(s)){ unlocked.add(s.id);    pts-=s.cost; updateUI(); } }
+  });
+});
+
+/* helper: build box content */
+function boxContent(s){
+  const on=unlocked.has(s.id);
+  const src=on?s.imgOn:s.imgOff;
+  const r=s.shape==='circle'?'50%':s.shape==='root'?'11px':'8px';
+  if(src) return `<img src="${src}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:${r};display:block;" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph',style:'background:transparent',textContent:'✦'}))">`;
+  return ph(s.side);
+}
+
+function updateUI(){
+  document.getElementById('pts-display').textContent=pts;
+  SKILLS.forEach(s=>{
+    const on=unlocked.has(s.id);
+    const box=document.getElementById('box_'+s.id);
+    box.classList.toggle('on',on);
+    box.innerHTML=boxContent(s);
+    nodeEls[s.id].classList.toggle('unavail',!on&&!canUnlock(s));
+  });
+  EDGES.forEach(([a,b])=>{
+    const el=edgeEls[`${a}-${b}`];
+    const uA=unlocked.has(a),uB=unlocked.has(b);
+    if(uA&&uB){
+      const sa=skillMap[a],sb=skillMap[b];
+      const side=(sa.side==='left'||sb.side==='left')?'blue':'red';
+      el.className.baseVal='edge '+side;
+    } else { el.className.baseVal='edge'; }
+  });
+}
+
+updateUI();
+document.getElementById('reset-btn').addEventListener('click',()=>{ unlocked.clear(); pts=TOTAL; updateUI(); });
+</script>
+</body>
+</html>
